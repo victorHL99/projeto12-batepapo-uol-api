@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon node app.js"
+    "dev": "nodemon back-end/app.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +16,9 @@
     "chalk": "^5.0.1",
     "cors": "^2.8.5",
     "express": "^4.18.0",
-    "mongodb": "^4.5.0",
-    "nodemon": "^2.0.15"
+    "mongodb": "^4.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
   }
 }
