@@ -10,9 +10,9 @@ app.listen(5000, () => {
     console.log(chalk.red.bold("Servidor iniciado na porta 5000"))
 });
 
+let db = null;
 const mongoClient = new MongoClient("mongodb://localhost:27017");
-let db;
-
+const promise  = mongoClient.connect();
 
 
 //Post /participants 
@@ -47,5 +47,5 @@ app.get("/messages", (req,res) => {
 
 //Post /status
 app.post("/status", (req, res) => {
-    
+
 })
