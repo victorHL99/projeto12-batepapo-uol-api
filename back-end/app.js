@@ -2,6 +2,7 @@ import express, {json} from "express";
 import chalk from "chalk";
 import cors from "cors";
 import {MongoClient} from "mongodb";
+import dotenv from "dotenv";
 
 const app = express();
 app.use(cors());
@@ -12,7 +13,8 @@ app.listen(5000, () => {
 
 // CONFIGURANDO O BANCO DE DADOS
 let dataBase = null;
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+dotenv.config();
+const mongoClient = new MongoClient(process.env.MONGO_URL);
 const promise  = mongoClient.connect();
 promise.then(response => {
     dataBase = mongoClient.db("Driven");
