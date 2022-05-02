@@ -7,13 +7,18 @@ const app = express();
 app.use(cors());
 app.use(json());
 app.listen(5000, () => {
-    console.log(chalk.red.bold("Servidor iniciado na porta 5000"))
+    console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
 });
 
-let db = null;
+// CONFIGURANDO O BANCO DE DADOS
+let dataBase = null;
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 const promise  = mongoClient.connect();
-
+promise.then(response => {
+    dataBase = mongoClient.db("test");
+    console.log(chalk.green.bold("Banco de dados conectado"));
+});
+promise.catch(error => console.log(chalk.red.bold("Banco de dados não conectado"),error));
 
 //Post /participants 
 app.post("/participants", (req, res) => {
