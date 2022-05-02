@@ -15,29 +15,47 @@ let dataBase = null;
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 const promise  = mongoClient.connect();
 promise.then(response => {
-    dataBase = mongoClient.db("test");
+    dataBase = mongoClient.db("Driven");
     console.log(chalk.green.bold("Banco de dados conectado"));
 });
-promise.catch(error => console.log(chalk.red.bold("Banco de dados não conectado"),error));
+promise.catch(error => {
+    console.log(chalk.red.bold("Banco de dados não conectado"),error)});
 
 //Post /participants 
 app.post("/participants", (req, res) => {
     const {name} = req.body;
-    //Validar: (caso algum erro seja encontrado, retornar status 422)
-    //name deve ser strings não vazio
+
+    const novoParticipante = {
+        name,
+        lastStatus: Date.now()
+    }
+
     if(!name) {
         res.sendStatus(422);
-    } else {
-        console.log(name);
-        participants.push(name);
-        res.send("ok");
-
+        return;
     }
+
+    const promise = dataBase.collection("participantes").insertOne(novoParticipante);
+    promise.then((confirmacao)=>{
+        console.log(confirmacao);
+        res.status(201).send(chalk.green.bold("Participante inserido com sucesso"));
+    });
+    promise.catch((error) =>{ 
+        console.log(chalk.red.bold("Erro ao inserir novo participante"),error)
+        res.status(500).send("Erro ao inserir novo participante")});
+    
 })
 
-// Get /participants
 app.get("/participants", (req, res) => {
     // retornar a lista de todos os participantes
+    const promise = dataBase.collection("participantes").find({}).toArray();
+    promise.then((participantes) => {
+        res.send(participantes);
+    });
+    promise.catch((error) => {
+        console.log(chalk.red.bold("Erro ao buscar participantes"),error)
+        res.status(500).send("Erro ao buscar participantes");
+    })
 })
 
 // Post /messages
