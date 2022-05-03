@@ -158,9 +158,10 @@ app.post("/status", async (req, res) => {
 setInterval(async () => {
     try {
         const participants = await dataBase.collection("participants").find({}).toArray();
+        const tempoAtual = Date.now();
 
-        const validarTempoParticipante = participants.filter(participant => {
-            if (Math.abs(participant.lastStatus - Date.now()) > 10000) {
+        const validarTempoParticipante = participants.filter(tempoUsuario => {
+            if (Math.abs(tempoUsuario.lastStatus - tempoAtual) > 10000) {
                 return true;
             }
 
