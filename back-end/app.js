@@ -1,63 +1,74 @@
 import express, {json} from "express";
 import chalk from "chalk";
 import cors from "cors";
-import {MongoClient} from "mongodb";
 import dotenv from "dotenv";
+import joi from "joi";
+
+import {MongoClient, ObjectId} from "mongodb";
 
 const app = express();
 app.use(cors());
 app.use(json());
-app.listen(5000, () => {
-    console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
-});
+dotenv.config();
 
 // CONFIGURANDO O BANCO DE DADOS
 let dataBase = null;
-dotenv.config();
 const mongoClient = new MongoClient(process.env.MONGO_URL);
-const promise  = mongoClient.connect();
+/* const promise  = mongoClient.connect();
 promise.then(response => {
     dataBase = mongoClient.db("Driven");
-    console.log(chalk.green.bold("Banco de dados conectado"));
+    console.log(chalk.green.bold("Banco de dados conectado")); 
 });
 promise.catch(error => {
-    console.log(chalk.red.bold("Banco de dados não conectado"),error)});
+    console.log(chalk.red.bold("Banco de dados não conectado"),error)}); */
 
 //Post /participants 
-app.post("/participants", (req, res) => {
+app.post("/participants", async(req, res) => {
     const {name} = req.body;
-
     const novoParticipante = {
         name,
         lastStatus: Date.now()
     }
+    
+    const userSchema = joi.object({
+        name: joi.string().required().min(1),
+        lastStatus: joi.number().required()
+    });
+    
+    const validarNomeUsuario = userSchema.validate(novoParticipante);
+    const participante = await dataBase.collection("participants").find({name}).toArray();
 
-    if(!name) {
-        res.sendStatus(422);
+    if(validarNomeUsuario.error){
+        res.status(422).send(validarNomeUsuario.error.details.map(descricao => descricao.message));
         return;
     }
-
-    const promise = dataBase.collection("participantes").insertOne(novoParticipante);
-    promise.then((confirmacao)=>{
-        console.log(confirmacao);
-        res.status(201).send(chalk.green.bold("Participante inserido com sucesso"));
-    });
-    promise.catch((error) =>{ 
-        console.log(chalk.red.bold("Erro ao inserir novo participante"),error)
-        res.status(500).send("Erro ao inserir novo participante")});
     
-})
 
-app.get("/participants", (req, res) => {
-    // retornar a lista de todos os participantes
-    const promise = dataBase.collection("participantes").find({}).toArray();
-    promise.then((participantes) => {
+    try{
+        const verificacao = await dataBase.collection("participants").findOne({name});
+        if(verificacao){
+            res.sendStatus(409);
+            return;
+        } else {
+            await dataBase.collection("participants").insertOne(novoParticipante);
+            res.status(201).send(chalk.green.bold("Participante inserido com sucesso"));
+        }
+
+    } catch(error) {
+        console.log(chalk.red.bold("Erro ao inserir novo participante"),error)
+        res.status(500).send("Erro ao inserir novo participante");
+    }
+});
+
+
+app.get("/participants", async (req, res) => {
+    try{
+        const participantes = dataBase.collection("participants").find({}).toArray();
         res.send(participantes);
-    });
-    promise.catch((error) => {
-        console.log(chalk.red.bold("Erro ao buscar participantes"),error)
-        res.status(500).send("Erro ao buscar participantes");
-    })
+    } catch (e){
+        console.log(chalk.red.bold("Erro ao listar participantes"),e)
+        res.status(500).send("Erro ao listar participantes");
+    }
 })
 
 // Post /messages
@@ -67,10 +78,16 @@ app.post("/messages", (req, res) => {
 
 // Get /messages
 app.get("/messages", (req,res) => {
-
+    
 })
 
 //Post /status
 app.post("/status", (req, res) => {
-
+    
 })
+
+
+
+app.listen(5000, () => {
+    console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
+});
