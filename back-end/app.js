@@ -14,19 +14,18 @@ dotenv.config();
 // CONFIGURANDO O BANCO DE DADOS
 let dataBase = null;
 const mongoClient = new MongoClient(process.env.MONGO_URL);
-/* const promise  = mongoClient.connect();
+const promise  = mongoClient.connect();
 promise.then(response => {
     dataBase = mongoClient.db("Driven");
     console.log(chalk.green.bold("Banco de dados conectado")); 
 });
 promise.catch(error => {
-    console.log(chalk.red.bold("Banco de dados não conectado"),error)}); */
+    console.log(chalk.red.bold("Banco de dados não conectado"),error)});
 
-//Post /participants 
-app.post("/participants", async(req, res) => {
-    const {name} = req.body;
+app.post("/participants", async (req, res) => {
+    const body = req.body;
     const novoParticipante = {
-        name,
+        name: body.name,
         lastStatus: Date.now()
     }
     
@@ -36,16 +35,16 @@ app.post("/participants", async(req, res) => {
     });
     
     const validarNomeUsuario = userSchema.validate(novoParticipante);
-    const participante = await dataBase.collection("participants").find({name}).toArray();
-
     if(validarNomeUsuario.error){
         res.status(422).send(validarNomeUsuario.error.details.map(descricao => descricao.message));
         return;
     }
+    /* const participante = await dataBase.collection("participants").find({name:body.name}).toArray(); */
+
     
 
     try{
-        const verificacao = await dataBase.collection("participants").findOne({name});
+        const verificacao = await dataBase.collection("participants").findOne({name:body.name});
         if(verificacao){
             res.sendStatus(409);
             return;
@@ -63,27 +62,11 @@ app.post("/participants", async(req, res) => {
 
 app.get("/participants", async (req, res) => {
     try{
-        const participantes = dataBase.collection("participants").find({}).toArray();
+        const participantes = await dataBase.collection("participants").find({}).toArray();
         res.send(participantes);
     } catch (e){
-        console.log(chalk.red.bold("Erro ao listar participantes"),e)
         res.status(500).send("Erro ao listar participantes");
     }
-})
-
-// Post /messages
-app.post("/messages", (req, res) => {
-    const {to, text, type} = req.body;
-})
-
-// Get /messages
-app.get("/messages", (req,res) => {
-    
-})
-
-//Post /status
-app.post("/status", (req, res) => {
-    
 })
 
 
