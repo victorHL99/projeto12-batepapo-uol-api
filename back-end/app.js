@@ -12,7 +12,6 @@ app.use(cors());
 app.use(json());
 dotenv.config();
 
-// CONFIGURANDO O BANCO DE DADOS
 let dataBase = null;
 const mongoClient = new MongoClient(process.env.MONGO_URL);
 const promise  = mongoClient.connect();
@@ -23,7 +22,7 @@ promise.then(response => {
 promise.catch(error => {
     console.log(chalk.red.bold("Banco de dados não conectado"),error)});
 
-//CONFIGURAÇAO DE SCHEMA
+
 const userSchema = Joi.object({
     name: Joi.string().required(),
 });
@@ -35,7 +34,6 @@ const messageSchema = Joi.object({
 })
 
 
-// CONFIGURANDO POST/PARTICIPANTS
 app.post("/participants", async (req, res) => {
     const {name} = req.body;
     const novoParticipante = {
@@ -64,7 +62,6 @@ app.post("/participants", async (req, res) => {
     }
 });
 
-//CONFIGURAÇÃO GET/PARTICIPANTS
 app.get("/participants", async (req, res) => {
     try{
         const participantes = await dataBase.collection("participants").find({}).toArray();
@@ -74,7 +71,6 @@ app.get("/participants", async (req, res) => {
     }
 })
 
-//CONFIGURAÇÃO POST/MESSAGES
 app.post("/messages", async (req, res) => {
 const {to,text,type} = req.body;
 const {user} = req.headers;
@@ -109,7 +105,6 @@ try{
 
 })
 
-//CONFIGURAÇÃO GET/MESSAGES
 app.get("/messages", async (req, res) => {
     let {limit} = req.query;
     const {user} = req.headers;
@@ -178,8 +173,8 @@ setInterval(async () => {
                 time: dayjs().format('HH:mm:ss')
             });
         }
-    } catch(e) {
-        console.log(chalk.bold.red('Deu erro no autoRemove', e));
+    } catch(error) {
+        console.log(error);
     }
 }
 , 15000);
