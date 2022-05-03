@@ -22,10 +22,11 @@ promise.then(response => {
 promise.catch(error => {
     console.log(chalk.red.bold("Banco de dados não conectado"),error)});
 
+// CONFIGURANDO POST/PARTICIPANTS
 app.post("/participants", async (req, res) => {
-    const body = req.body;
+    const {name} = req.body;
     const novoParticipante = {
-        name: body.name,
+        name,
         lastStatus: Date.now()
     }
     
@@ -39,12 +40,9 @@ app.post("/participants", async (req, res) => {
         res.status(422).send(validarNomeUsuario.error.details.map(descricao => descricao.message));
         return;
     }
-    /* const participante = await dataBase.collection("participants").find({name:body.name}).toArray(); */
-
-    
 
     try{
-        const verificacao = await dataBase.collection("participants").findOne({name:body.name});
+        const verificacao = await dataBase.collection("participants").findOne({name});
         if(verificacao){
             res.sendStatus(409);
             return;
@@ -59,7 +57,7 @@ app.post("/participants", async (req, res) => {
     }
 });
 
-
+//CONFIGURAÇÃO GET/PARTICIPANTS
 app.get("/participants", async (req, res) => {
     try{
         const participantes = await dataBase.collection("participants").find({}).toArray();
