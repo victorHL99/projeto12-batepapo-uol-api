@@ -71,14 +71,13 @@ app.get("/participants", async (req, res) => {
 //CONFIGURAÇÃO POST/MESSAGES
 app.post("/messages", async (req, res) => {
 const {to,text,type} = req.body;
-const {user} = req.headers;
-const tempoAtual = dayjs().format("HH:mm:ss");
+const {user} = req.header;
 const novaMensagem = {
     from: user,
     to,
     text,
     type,
-    time : tempoAtual
+    time : dayjs().format("HH:mm:ss")
 }
 
 const messageSchema = joi.object({
@@ -108,9 +107,50 @@ try{
 
 })
 
+//CONFIGURAÇÃO GET/MESSAGES
 app.get("/messages", async (req, res) => {
-    
+    let {limit} = req.query;
+    const {user} = req.header;
+
+    if(!limit){
+        limit = 100;
+    } 
+        
+
+    try{
+        const mensagens = await dataBase.collection("messages").find({$or: [{from:user},{to:user},{to:"Todos"}]}).toArray();
+        const messagesInvertidas = mensagens.reverse();
+        const novasMensagens = [];
+        for(let i = 0; i < messagesInvertidas.length; i++){
+            if(i<limit){
+                novasMensagens.push(messagesInvertidas[i]);
+            } else {
+                break;
+            }
+        }
+
+        res.send(novasMensagens.reverse());
+    } catch(error){
+        res.sendStatus(422);
+    }
 })
+
+app.post("/status", async (req, res) => {
+    const {user} = req.header;
+    
+    try{
+        const validarUsuario = await dataBase.collection("participants").findOne({name: user});
+        if(validarUsuario.error){
+            res.sendStatus(404);
+            return;
+        }
+
+        await dataBase.collection("participants").updateOne({name: user}, {$set: {lastStatus: Date.now()}});
+        res.sendStatus(200);
+    } catch (error){
+        res.sendStatus(404);
+    }
+});
 
 app.listen(5000, () => {
     console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
