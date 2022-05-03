@@ -42,7 +42,7 @@ app.post("/participants", async (req, res) => {
         name,
         lastStatus: Date.now()
     }
-    const validarNomeUsuario = userSchema.validate(novoParticipante);
+    const validarNomeUsuario = userSchema.validate({name});
     if(validarNomeUsuario.error){
         res.status(422).send(validarNomeUsuario.error.details.map(descricao => descricao.message));
         return;
@@ -77,7 +77,7 @@ app.get("/participants", async (req, res) => {
 //CONFIGURAÇÃO POST/MESSAGES
 app.post("/messages", async (req, res) => {
 const {to,text,type} = req.body;
-const {user} = req.header;
+const {user} = req.headers;
 const novaMensagem = {
     from: user,
     to: to,
@@ -112,7 +112,7 @@ try{
 //CONFIGURAÇÃO GET/MESSAGES
 app.get("/messages", async (req, res) => {
     let {limit} = req.query;
-    const {user} = req.header;
+    const {user} = req.headers;
 
     if(!limit){
         limit = 100;
@@ -138,7 +138,7 @@ app.get("/messages", async (req, res) => {
 })
 
 app.post("/status", async (req, res) => {
-    const {user} = req.header;
+    const {user} = req.headers;
     
     try{
         const validarUsuario = await dataBase.collection("participants").findOne({name: user});
