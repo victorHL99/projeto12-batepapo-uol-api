@@ -2,10 +2,10 @@ import express, {json} from "express";
 import chalk from "chalk";
 import cors from "cors";
 import dotenv from "dotenv";
-import joi from "joi";
+import Joi from "joi";
 import dayjs from "dayjs";
 
-import {MongoClient, ObjectId} from "mongodb";
+import {MongoClient} from "mongodb";
 
 const app = express();
 app.use(cors());
@@ -23,6 +23,18 @@ promise.then(response => {
 promise.catch(error => {
     console.log(chalk.red.bold("Banco de dados não conectado"),error)});
 
+//CONFIGURAÇAO DE SCHEMA
+const userSchema = Joi.object({
+    name: Joi.string().required(),
+});
+
+const messageSchema = Joi.object({
+    to: Joi.string().required(),
+    text: Joi.string().required(),
+    type: Joi.valid("message", "private_message").required(),
+})
+
+
 // CONFIGURANDO POST/PARTICIPANTS
 app.post("/participants", async (req, res) => {
     const {name} = req.body;
@@ -30,12 +42,6 @@ app.post("/participants", async (req, res) => {
         name,
         lastStatus: Date.now()
     }
-    
-    const userSchema = joi.object({
-        name: joi.string().required().min(1),
-        lastStatus: joi.number().required()
-    });
-    
     const validarNomeUsuario = userSchema.validate(novoParticipante);
     if(validarNomeUsuario.error){
         res.status(422).send(validarNomeUsuario.error.details.map(descricao => descricao.message));
@@ -64,7 +70,7 @@ app.get("/participants", async (req, res) => {
         const participantes = await dataBase.collection("participants").find({}).toArray();
         res.send(participantes);
     } catch (e){
-        res.status(500).send("Erro ao listar participantes");
+        res.sendStatus(500);
     }
 })
 
@@ -74,17 +80,13 @@ const {to,text,type} = req.body;
 const {user} = req.header;
 const novaMensagem = {
     from: user,
-    to,
-    text,
-    type,
+    to: to,
+    text: text,
+    type: type,
     time : dayjs().format("HH:mm:ss")
 }
 
-const messageSchema = joi.object({
-    to: joi.string().required().min(1),
-    text: joi.string().required().min(1),
-    type: joi.valid('message', 'private_message').required(),
-})
+
 
 try{
     await messageSchema.validate(novaMensagem, {abortEarly: false});
@@ -151,6 +153,35 @@ app.post("/status", async (req, res) => {
         res.sendStatus(404);
     }
 });
+
+
+setInterval(async () => {
+    try {
+        const participants = await dataBase.collection("participants").find({}).toArray();
+
+        const validarTempoParticipante = participants.filter(participant => {
+            if (Math.abs(participant.lastStatus - Date.now()) > 10000) {
+                return true;
+            }
+
+            return false
+        });
+
+        for (let i = 0; i < validarTempoParticipante.length; i++) {
+            await dataBase.collection('participants').deleteOne({name: validarTempoParticipante[i].name});
+            await dataBase.collection('messages').insertOne({
+                from: validarTempoParticipante[i].name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs().format('HH:mm:ss')
+            });
+        }
+    } catch(e) {
+        console.log(chalk.bold.red('Deu erro no autoRemove', e));
+    }
+}
+, 15000);
 
 app.listen(5000, () => {
     console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
