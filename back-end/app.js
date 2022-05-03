@@ -3,6 +3,7 @@ import chalk from "chalk";
 import cors from "cors";
 import dotenv from "dotenv";
 import joi from "joi";
+import dayjs from "dayjs";
 
 import {MongoClient, ObjectId} from "mongodb";
 
@@ -67,7 +68,49 @@ app.get("/participants", async (req, res) => {
     }
 })
 
+//CONFIGURAÇÃO POST/MESSAGES
+app.post("/messages", async (req, res) => {
+const {to,text,type} = req.body;
+const {user} = req.headers;
+const tempoAtual = dayjs().format("HH:mm:ss");
+const novaMensagem = {
+    from: user,
+    to,
+    text,
+    type,
+    time : tempoAtual
+}
 
+const messageSchema = joi.object({
+    to: joi.string().required().min(1),
+    text: joi.string().required().min(1),
+    type: joi.valid('message', 'private_message').required(),
+})
+
+try{
+    await messageSchema.validate(novaMensagem, {abortEarly: false});
+} catch(error){
+    res.sendStatus(422);
+    return;
+}
+
+try{
+    const validacaoParticipante = await dataBase.collection("participants").findOne({name: user});
+    if(!validacaoParticipante){
+        res.sendStatus(422);
+        return;
+    }
+    await dataBase.collection("messages").insertOne(novaMensagem);
+    res.sendStatus(201);
+} catch (error){
+    res.sendStatus(422);
+}
+
+})
+
+app.get("/messages", async (req, res) => {
+    
+})
 
 app.listen(5000, () => {
     console.log(chalk.blue.bold("Servidor iniciado na porta 5000"))
